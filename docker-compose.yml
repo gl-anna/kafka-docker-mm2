@@ -1,5 +1,3 @@
-version: '3'
-
 services:
 
   zookeeperA:
@@ -21,7 +19,7 @@ services:
       ZOOKEEPER_SERVERS: zookeeperA:22888:23888
       
   broker1A:
-    image: confluentinc/cp-kafka
+    image: confluentinc/cp-kafka:7.2.2
     hostname: broker1A
     container_name: broker1A
     ports:
@@ -30,6 +28,7 @@ services:
     depends_on:
       - zookeeperA
     environment:
+      KAFKA_KRAFT_MODE: 'false'
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeperA:22181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
@@ -39,7 +38,7 @@ services:
       KAFKA_AUTO_OFFSET_RESET: "latest"
       
   broker2A:
-    image: confluentinc/cp-kafka
+    image: confluentinc/cp-kafka:7.2.2
     hostname: broker2A
     container_name: broker2A
     ports:
@@ -48,6 +47,7 @@ services:
     depends_on:
       - zookeeperA
     environment:
+      KAFKA_KRAFT_MODE: 'false'
       KAFKA_BROKER_ID: 2
       KAFKA_ZOOKEEPER_CONNECT: zookeeperA:22181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
@@ -57,7 +57,7 @@ services:
       KAFKA_AUTO_OFFSET_RESET: "latest"
       
   broker3A:
-    image: confluentinc/cp-kafka
+    image: confluentinc/cp-kafka:7.2.2
     hostname: broker3A
     container_name: broker3A
     ports:
@@ -66,6 +66,7 @@ services:
     depends_on:
       - zookeeperA
     environment:
+      KAFKA_KRAFT_MODE: 'false'
       KAFKA_BROKER_ID: 3
       KAFKA_ZOOKEEPER_CONNECT: zookeeperA:22181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
@@ -93,7 +94,7 @@ services:
       ZOOKEEPER_SERVERS: zookeeperB:32888:33888
       
   broker1B:
-    image: confluentinc/cp-kafka
+    image: confluentinc/cp-kafka:7.2.2
     hostname: broker1B
     container_name: broker1B
     ports:
@@ -111,7 +112,7 @@ services:
       KAFKA_AUTO_OFFSET_RESET: "latest"
       
   broker2B:
-    image: confluentinc/cp-kafka
+    image: confluentinc/cp-kafka:7.2.2
     hostname: broker2B
     container_name: broker2B
     ports:
@@ -127,9 +128,10 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker2B:29094,PLAINTEXT_HOST://localhost:8093
       ALLOW_PLAINTEXT_LISTENER: 'yes'    
       KAFKA_AUTO_OFFSET_RESET: "latest"
-      
+      CLUSTER_ID: clusterB
+
   broker3B:
-    image: confluentinc/cp-kafka
+    image: confluentinc/cp-kafka:7.2.2
     hostname: broker3B
     container_name: broker3B
     ports:
@@ -147,7 +149,9 @@ services:
       KAFKA_AUTO_OFFSET_RESET: "latest"
 
   mirror-maker:
-    image: confluentinc/cp-kafka
+    build:
+      context: .
+      dockerfile: Dockerfile
     hostname: mirror-maker
     container_name: mirror-maker
     volumes:
@@ -155,6 +159,7 @@ services:
     ports:
       - 9091:9091
       - 29096:29096
+      - 9095:9095
     depends_on:
       - zookeeperA
       - zookeeperB
@@ -172,3 +177,4 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://mirror-maker:29096,PLAINTEXT_HOST://localhost:9091
       ALLOW_PLAINTEXT_LISTENER: 'yes'
       KAFKA_AUTO_OFFSET_RESET: "latest"
+      CLUSTER_ID: clusterC
