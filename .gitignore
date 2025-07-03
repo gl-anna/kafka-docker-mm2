@@ -1,0 +1,6 @@
+zookeeperA
+zookeeperB
+.idea
+node-test/node_modules
+node-test/package-lock.json
+testOffsetMm2/dependency-reduced-pom.xml

@@ -119,8 +119,8 @@ public class TestOffsetMm2 {
 
             String match;
             if (recordA != null && recordB != null &&
-                recordA.partition == recordB.partition &&
-                recordA.offset == recordB.offset) {
+                    recordA.partition == recordB.partition &&
+                    recordA.offset == recordB.offset) {
                 match = "✓";
             } else {
                 match = "✗";
