@@ -28,7 +28,6 @@ public class TestOffsetMm2 {
 
     public static void main(String[] args) throws ExecutionException, InterruptedException {
         String topicA = "topic1";
-        String topicB = "clusterA.topic1";
 
         // Producer & Admin configs
         Properties adminProps = new Properties();
@@ -43,9 +42,9 @@ public class TestOffsetMm2 {
         try (AdminClient adminClient = AdminClient.create(adminProps)) {
             NewTopic topic = new NewTopic(topicA, 3, (short) 3);
             adminClient.createTopics(Collections.singleton(topic)).all().get();
-            System.out.println("Topic 'topic1' created.");
+            System.out.println(String.format("Topic %s created.", topicA));
         } catch (Exception e) {
-            System.out.println("Topic might already exist or error occurred: " + e.getMessage());
+            System.out.println(String.format("Topic might already exist or error occurred: %s",e.getMessage()));
         }
 
         // Produce 10 messages
@@ -55,7 +54,7 @@ public class TestOffsetMm2 {
                 producer.send(new ProducerRecord<>(topicA, value));
             }
             producer.flush();
-            System.out.println("Produced 10 messages to 'topic1'.");
+            System.out.println(String.format("Produced 10 messages to %s.", topicA));
         }
 
         // --- Consumer Logic Below ---
@@ -107,10 +106,10 @@ public class TestOffsetMm2 {
 
         // Read Cluster B
         try (Consumer<String, String> consumerB = new KafkaConsumer<>(clusterBprops)) {
-            List<PartitionInfo> partitionsB = consumerB.partitionsFor(topicB);
+            List<PartitionInfo> partitionsB = consumerB.partitionsFor(topicA);
             List<TopicPartition> topicPartitionsB = new ArrayList<>();
             for (PartitionInfo p : partitionsB) {
-                topicPartitionsB.add(new TopicPartition(topicB, p.partition()));
+                topicPartitionsB.add(new TopicPartition(topicA, p.partition()));
             }
 
             consumerB.assign(topicPartitionsB);
@@ -129,10 +128,10 @@ public class TestOffsetMm2 {
 
         // Print comparison table
         System.out.println(String.format(
-                "%-15s | %-14s | %-20s | %-16s | %-14s | %-20s | %-14s | %-5s",
+                "%-25s | %-14s | %-20s | %-16s | %-14s | %-20s | %-14s | %-5s",
                 "Message value", "ClusterA topic", "ClusterA partition", "ClusterA offset",
                 "ClusterB topic", "ClusterB partition", "ClusterB offset", "Match"));
-        System.out.println(new String(new char[150]).replace("\0", "-"));
+        System.out.println(new String(new char[155]).replace("\0", "-"));
 
         Set<String> allKeys = new HashSet<>();
         allKeys.addAll(mapA.keySet());
@@ -162,7 +161,7 @@ public class TestOffsetMm2 {
             }
 
             System.out.println(String.format(
-                    "%-15s | %-14s | %-20s | %-16s | %-14s | %-20s | %-14s | %-5s",
+                    "%-25s | %-14s | %-20s | %-16s | %-14s | %-20s | %-14s | %-5s",
                     messageValue, topicAout, partAout, offsetAout,
                     topicBout, partBout, offsetBout, match));
         }
