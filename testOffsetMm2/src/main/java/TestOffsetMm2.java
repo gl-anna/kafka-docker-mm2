@@ -1,10 +1,15 @@
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 public class TestOffsetMm2 {
     static class RecordDetails {
@@ -21,7 +26,40 @@ public class TestOffsetMm2 {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        String topicA = "topic1";
+        String topicB = "clusterA.topic1";
+
+        // Producer & Admin configs
+        Properties adminProps = new Properties();
+        adminProps.put("bootstrap.servers", "localhost:9092");
+
+        Properties producerProps = new Properties();
+        producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+
+        // Create topic
+        try (AdminClient adminClient = AdminClient.create(adminProps)) {
+            NewTopic topic = new NewTopic(topicA, 3, (short) 3);
+            adminClient.createTopics(Collections.singleton(topic)).all().get();
+            System.out.println("Topic 'topic1' created.");
+        } catch (Exception e) {
+            System.out.println("Topic might already exist or error occurred: " + e.getMessage());
+        }
+
+        // Produce 10 messages
+        try (KafkaProducer<String, String> producer = new KafkaProducer<>(producerProps)) {
+            for (int i = 0; i < 10; i++) {
+                String value = "message-" + i;
+                producer.send(new ProducerRecord<>(topicA, value));
+            }
+            producer.flush();
+            System.out.println("Produced 10 messages to 'topic1'.");
+        }
+
+        // --- Consumer Logic Below ---
+
         // Cluster A config
         Properties clusterAprops = new Properties();
         clusterAprops.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
@@ -41,9 +79,6 @@ public class TestOffsetMm2 {
         clusterBprops.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         clusterBprops.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         clusterBprops.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-
-        String topicA = "topic1";
-        String topicB = "clusterA.topic1";
 
         Map<String, RecordDetails> mapA = new HashMap<>();
         Map<String, RecordDetails> mapB = new HashMap<>();
@@ -92,7 +127,7 @@ public class TestOffsetMm2 {
             }
         }
 
-        // Print table header
+        // Print comparison table
         System.out.println(String.format(
                 "%-15s | %-14s | %-20s | %-16s | %-14s | %-20s | %-14s | %-5s",
                 "Message value", "ClusterA topic", "ClusterA partition", "ClusterA offset",
